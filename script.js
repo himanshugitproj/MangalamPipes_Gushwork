@@ -176,18 +176,17 @@ document.addEventListener("DOMContentLoaded", () => {
     handleCompanyLogos();
   });
   
-  // Optional: Add smooth transitions
-  function addLogoTransitions() {
-    const logoImages = document.querySelectorAll('.company-logos img');
-    logoImages.forEach(img => {
-      img.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-    });
-  }
+  // function addLogoTransitions() {
+  //   const logoImages = document.querySelectorAll('.company-logos img');
+  //   logoImages.forEach(img => {
+  //     img.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  //   });
+  // }
   
-  // Call this after DOM is loaded
-  document.addEventListener('DOMContentLoaded', () => {
-    addLogoTransitions();
-  });
+  // // Call this after DOM is loaded
+  // document.addEventListener('DOMContentLoaded', () => {
+  //   addLogoTransitions();
+  // });
 
 
 //   faq section js 
@@ -504,12 +503,236 @@ document.addEventListener("DOMContentLoaded", () => {
       })
     }, observerOptions)
   
-    // sectionsToAnimate.forEach((element, index) => {
-    //   // Add initial styles for animation
-    //   element.style.opacity = "0"
-    //   element.style.transform = "translateY(20px)"
-    //   element.style.transition = `opacity 0.6s ease ${index * 0.05}s, transform 0.6s ease ${index * 0.05}s`
-    //   sectionObserver.observe(element)
-    // })
   })
+
+
+  class ManufacturingCarousel {
+    constructor() {
+        this.currentSlide = 0;
+        this.totalSlides = 8;
+        this.isAnimating = false;
+        
+        this.slides = [
+            { title: 'Raw Material', step: 1 },
+            { title: 'Extrusion', step: 2 },
+            { title: 'Cooling', step: 3 },
+            { title: 'Sizing', step: 4 },
+            { title: 'Quality Control', step: 5 },
+            { title: 'Marking', step: 6 },
+            { title: 'Cutting', step: 7 },
+            { title: 'Packaging', step: 8 }
+        ];
+        
+        this.init();
+    }
+    
+    init() {
+        this.bindEvents();
+        this.updateUI();
+        this.setupSwipeGestures();
+        this.setupKeyboardNavigation();
+    }
+    
+    bindEvents() {
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        prevBtn.addEventListener('click', () => this.previousSlide());
+        nextBtn.addEventListener('click', () => this.nextSlide());
+    }
+    
+    setupSwipeGestures() {
+        const container = document.querySelector('.carousel-content');
+        let startX = 0;
+        let startY = 0;
+        let startTime = 0;
+        
+        container.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            startTime = Date.now();
+        }, { passive: true });
+        
+        container.addEventListener('touchend', (e) => {
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const endTime = Date.now();
+            
+            this.handleSwipe(startX, startY, endX, endY, endTime - startTime);
+        }, { passive: true });
+    }
+    
+    handleSwipe(startX, startY, endX, endY, duration) {
+        const deltaX = endX - startX;
+        const deltaY = endY - startY;
+        const minSwipeDistance = 50;
+        const maxSwipeTime = 300;
+        
+        // Only handle horizontal swipes that are fast enough
+        if (Math.abs(deltaX) > Math.abs(deltaY) && 
+            Math.abs(deltaX) > minSwipeDistance && 
+            duration < maxSwipeTime) {
+            
+            if (deltaX > 0) {
+                this.previousSlide();
+            } else {
+                this.nextSlide();
+            }
+        }
+    }
+    
+    setupKeyboardNavigation() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.previousSlide();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.nextSlide();
+            }
+        });
+    }
+    
+    nextSlide() {
+        if (this.isAnimating || this.currentSlide >= this.totalSlides - 1) return;
+        
+        this.goToSlide(this.currentSlide + 1, 'next');
+    }
+    
+    previousSlide() {
+        if (this.isAnimating || this.currentSlide <= 0) return;
+        
+        this.goToSlide(this.currentSlide - 1, 'prev');
+    }
+    
+    goToSlide(index, direction = 'next') {
+        if (this.isAnimating || index === this.currentSlide || 
+            index < 0 || index >= this.totalSlides) return;
+        
+        this.isAnimating = true;
+        this.animateSlide(this.currentSlide, index, direction);
+        this.currentSlide = index;
+        this.updateUI();
+        
+        // Reset animation flag
+        setTimeout(() => {
+            this.isAnimating = false;
+        }, 400);
+    }
+    
+    animateSlide(fromIndex, toIndex, direction) {
+        const slides = document.querySelectorAll('.slide');
+        const currentSlide = slides[fromIndex];
+        const nextSlide = slides[toIndex];
+        
+        // Prepare next slide
+        nextSlide.style.transform = direction === 'next' ? 'translateX(100%)' : 'translateX(-100%)';
+        nextSlide.style.opacity = '0';
+        nextSlide.style.position = 'absolute';
+        nextSlide.style.top = '0';
+        nextSlide.style.left = '0';
+        nextSlide.style.width = '100%';
+        
+        // Force reflow
+        nextSlide.offsetHeight;
+        
+        // Start animation
+        requestAnimationFrame(() => {
+            // Animate current slide out
+            currentSlide.style.transform = direction === 'next' ? 'translateX(-100%)' : 'translateX(100%)';
+            currentSlide.style.opacity = '0';
+            
+            // Animate next slide in
+            nextSlide.style.transform = 'translateX(0)';
+            nextSlide.style.opacity = '1';
+            
+            // Clean up after animation
+            setTimeout(() => {
+                // Reset all slides
+                slides.forEach((slide, index) => {
+                    slide.classList.remove('active');
+                    if (index === toIndex) {
+                        slide.classList.add('active');
+                        slide.style.position = 'relative';
+                        slide.style.transform = '';
+                        slide.style.opacity = '';
+                        slide.classList.add('fade-in');
+                        
+                        // Remove fade-in class after animation
+                        setTimeout(() => {
+                            slide.classList.remove('fade-in');
+                        }, 400);
+                    } else {
+                        slide.style.position = 'absolute';
+                        slide.style.transform = 'translateX(100%)';
+                        slide.style.opacity = '0';
+                    }
+                });
+            }, 400);
+        });
+    }
+    
+    updateUI() {
+        // Update step badge
+        const stepBadge = document.getElementById('stepBadge');
+        const currentSlideData = this.slides[this.currentSlide];
+        stepBadge.textContent = `Step ${currentSlideData.step}/8: ${currentSlideData.title}`;
+        
+        // Update navigation buttons
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        prevBtn.disabled = this.currentSlide === 0;
+        nextBtn.disabled = this.currentSlide === this.totalSlides - 1;
+        
+        // Add visual feedback for disabled state
+        if (prevBtn.disabled) {
+            prevBtn.style.opacity = '0.5';
+        } else {
+            prevBtn.style.opacity = '1';
+        }
+        
+        if (nextBtn.disabled) {
+            nextBtn.style.opacity = '0.5';
+        } else {
+            nextBtn.style.opacity = '1';
+        }
+    }
+    
+    // Public method to go to specific slide (for external control)
+    goToStep(stepNumber) {
+        if (stepNumber >= 1 && stepNumber <= this.totalSlides) {
+            const direction = stepNumber > this.currentSlide + 1 ? 'next' : 'prev';
+            this.goToSlide(stepNumber - 1, direction);
+        }
+    }
+    
+    // Get current step info
+    getCurrentStep() {
+        return {
+            step: this.currentSlide + 1,
+            title: this.slides[this.currentSlide].title,
+            total: this.totalSlides
+        };
+    }
+}
+
+// Initialize carousel when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.manufacturingCarousel = new ManufacturingCarousel();
+});
+
+// Handle page visibility change to pause animations
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && window.manufacturingCarousel) {
+        window.manufacturingCarousel.isAnimating = false;
+    }
+});
+
+// Prevent context menu on long press (mobile)
+document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.carousel-card')) {
+        e.preventDefault();
+    }
+});
   
